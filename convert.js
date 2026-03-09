@@ -89,7 +89,7 @@ function buildBaseLists({ countryGroupNames, hasSelfProxyGroup }) {
     hasSelfProxyGroup && PROXY_GROUPS.SELF,
     countryGroupNames,
     PROXY_GROUPS.MANUAL,
-    "DIRECT"
+    PROXY_GROUPS.DIRECT
   );
 
   /**
@@ -99,7 +99,7 @@ function buildBaseLists({ countryGroupNames, hasSelfProxyGroup }) {
     PROXY_GROUPS.SELECT,
     countryGroupNames,
     PROXY_GROUPS.MANUAL,
-    "DIRECT"
+    PROXY_GROUPS.DIRECT
   );
 
   return { defaultProxies, defaultSelector };
@@ -308,8 +308,8 @@ function buildSelfProxyGroup(config) {
   return {
     name: PROXY_GROUPS.SELF,
     icon: "https://gcore.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Bypass.png",
-    type: "url-test",
-    proxies: nodes,
+    type: "select",
+    proxies: [...nodes, PROXY_GROUPS.MANUAL, PROXY_GROUPS.DIRECT],
   };
 }
 
@@ -449,7 +449,7 @@ function buildCountryProxyGroups({ countries, loadBalance, countryInfo }) {
   return groups;
 }
 
-function buildProxyGroups({ selfProxyGroup, countryProxyGroups, defaultProxies, defaultSelector }) {
+function buildProxyGroups({ proxies, selfProxyGroup, countryProxyGroups, defaultProxies, defaultSelector }) {
   const featureGroups = FEATURE_GROUP_TEMPLATES.map((template) => ({
     name: template.name,
     icon: template.icon,
@@ -468,15 +468,15 @@ function buildProxyGroups({ selfProxyGroup, countryProxyGroups, defaultProxies, 
     {
       name: PROXY_GROUPS.MANUAL,
       icon: "https://gcore.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/select.png",
-      "include-all": true,
       type: "select",
+      proxies: proxies.map((proxy) => proxy.name).filter((name) => !/^self-tts/.test(name)),
     },
     ...featureGroups,
     {
       name: PROXY_GROUPS.DIRECT,
       icon: "https://gcore.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Direct.png",
       type: "select",
-      proxies: ["DIRECT", PROXY_GROUPS.SELECT],
+      proxies: ["DIRECT"],
     },
     {
       name: "广告拦截",
@@ -510,6 +510,7 @@ function main(config) {
   });
 
   const proxyGroups = buildProxyGroups({
+    proxies,
     selfProxyGroup,
     countryProxyGroups,
     defaultProxies,
