@@ -385,7 +385,7 @@ const countriesMeta = {
     icon: "https://gcore.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Thailand.png",
   },
   印度: {
-    pattern: "印度|India|🇮🇳",
+    pattern: "印度|IN|India|🇮🇳",
     icon: "https://gcore.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/India.png",
   },
   马来西亚: {
@@ -405,6 +405,7 @@ function parseCountries(config) {
 
   for (const proxy of proxies) {
     const name = proxy.name || "";
+    if (/^self-tts/.test(name)) continue;
     for (const { country, regex } of countryMatchers) {
       if (regex.test(name)) {
         if (!countryNodes.has(country)) countryNodes.set(country, []);
