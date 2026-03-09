@@ -385,7 +385,7 @@ const countriesMeta = {
     icon: "https://gcore.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Thailand.png",
   },
   印度: {
-    pattern: "印度|IN|India|🇮🇳",
+    pattern: "印度|India|🇮🇳",
     icon: "https://gcore.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/India.png",
   },
   马来西亚: {
