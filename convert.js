@@ -79,7 +79,7 @@ const PROXY_GROUPS = {
   DIRECT: "直连",
 };
 
-function buildBaseLists({ countryGroupNames, hasSelfProxyGroup }) {
+function buildBaseLists({ countryGroupNames, hasSelfProxyGroup, hasManualProxyGroup }) {
   const buildList = (...elements) => elements.flat().filter(Boolean);
 
   /**
@@ -88,7 +88,7 @@ function buildBaseLists({ countryGroupNames, hasSelfProxyGroup }) {
   const defaultSelector = buildList(
     hasSelfProxyGroup && PROXY_GROUPS.SELF,
     countryGroupNames,
-    PROXY_GROUPS.MANUAL,
+    hasManualProxyGroup && PROXY_GROUPS.MANUAL,
     PROXY_GROUPS.DIRECT
   );
 
@@ -98,7 +98,7 @@ function buildBaseLists({ countryGroupNames, hasSelfProxyGroup }) {
   const defaultProxies = buildList(
     PROXY_GROUPS.SELECT,
     countryGroupNames,
-    PROXY_GROUPS.MANUAL,
+    hasManualProxyGroup && PROXY_GROUPS.MANUAL,
     PROXY_GROUPS.DIRECT
   );
 
@@ -294,7 +294,13 @@ function buildDnsConfig({ ipv6Enabled }) {
   return config;
 }
 
-function buildSelfProxyGroup(config) {
+function buildManualProxyNames(proxies) {
+  return proxies
+    .map((proxy) => proxy.name)
+    .filter((name) => name && !/^self-tts/.test(name));
+}
+
+function buildSelfProxyGroup(config, { hasManualProxyGroup = true } = {}) {
   const proxies = config.proxies || [];
   const nodes = proxies
     .map((proxy) => proxy.name || "")
@@ -309,7 +315,11 @@ function buildSelfProxyGroup(config) {
     name: PROXY_GROUPS.SELF,
     icon: "https://gcore.jsdelivr.net/gh/Koolson/Qure@master/IconSet/Color/Bypass.png",
     type: "select",
-    proxies: [...nodes, PROXY_GROUPS.MANUAL, PROXY_GROUPS.DIRECT],
+    proxies: [
+      ...nodes,
+      hasManualProxyGroup && PROXY_GROUPS.MANUAL,
+      PROXY_GROUPS.DIRECT,
+    ].filter(Boolean),
   };
 }
 
@@ -450,7 +460,7 @@ function buildCountryProxyGroups({ countries, loadBalance, countryInfo }) {
   return groups;
 }
 
-function buildProxyGroups({ proxies, selfProxyGroup, countryProxyGroups, defaultProxies, defaultSelector }) {
+function buildProxyGroups({ manualProxyNames, selfProxyGroup, countryProxyGroups, defaultProxies, defaultSelector }) {
   const featureGroups = FEATURE_GROUP_TEMPLATES.map((template) => ({
     name: template.name,
     icon: template.icon,
@@ -470,7 +480,7 @@ function buildProxyGroups({ proxies, selfProxyGroup, countryProxyGroups, default
       name: PROXY_GROUPS.MANUAL,
       icon: "https://gcore.jsdelivr.net/gh/shindgewongxj/WHATSINStash@master/icon/select.png",
       type: "select",
-      proxies: proxies.map((proxy) => proxy.name).filter((name) => !/^self-tts/.test(name)),
+      proxies: manualProxyNames,
     },
     ...featureGroups,
     {
@@ -486,14 +496,18 @@ function buildProxyGroups({ proxies, selfProxyGroup, countryProxyGroups, default
       proxies: ["REJECT", "REJECT-DROP", PROXY_GROUPS.DIRECT],
     },
     ...countryProxyGroups,
-  ].filter(Boolean);
+  ].filter((group) => (
+    group && (group.name !== PROXY_GROUPS.MANUAL || manualProxyNames.length > 0)
+  ));
 }
 
 function main(config) {
   const proxies = config && Array.isArray(config.proxies) ? config.proxies : [];
   const resultConfig = { proxies };
+  const manualProxyNames = buildManualProxyNames(proxies);
+  const hasManualProxyGroup = manualProxyNames.length > 0;
 
-  const selfProxyGroup = buildSelfProxyGroup(resultConfig);
+  const selfProxyGroup = buildSelfProxyGroup(resultConfig, { hasManualProxyGroup });
 
   const countryInfo = parseCountries(resultConfig);
   const countryGroupNames = getCountryGroupNames(countryInfo);
@@ -502,6 +516,7 @@ function main(config) {
   const { defaultProxies, defaultSelector } = buildBaseLists({
     countryGroupNames,
     hasSelfProxyGroup: Boolean(selfProxyGroup),
+    hasManualProxyGroup,
   });
 
   const countryProxyGroups = buildCountryProxyGroups({
@@ -511,7 +526,7 @@ function main(config) {
   });
 
   const proxyGroups = buildProxyGroups({
-    proxies,
+    manualProxyNames,
     selfProxyGroup,
     countryProxyGroups,
     defaultProxies,
